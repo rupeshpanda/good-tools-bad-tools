@@ -1,0 +1,1746 @@
+{
+  "id": "thrashing",
+  "title": "The agent that could not find the terminal",
+  "question": "AA118 needs to be moved to a different gate in Terminal 2. Which one?",
+  "failure_mode": "Thrashing",
+  "severity": 2,
+  "teaches": "Given a bare `terminal: string`, the agent guesses 'Terminal 2', then '2', then wanders into an unrelated tool, then tries 'B'. It is not confused about which tool to use - it cannot work out what the argument is supposed to look like, and there is nowhere to find out.",
+  "cost": "Visible failure. Latency and token spend multiply, and in one of the recorded runs the agent never reaches an answer at all. This is the good case: at least it is obvious that something broke.",
+  "ground_truth": {
+    "answer": "Gate B14 - the first open gate in T2.",
+    "why": "The terminals are keyed 'T1'...'T4'. 'Terminal 2' and '2' both miss. One line of prose - \"Terminal identifier, e.g. 'T2'\" - removes the entire problem.",
+    "required_tools": [
+      "find_available_gate"
+    ],
+    "required_arguments": {
+      "find_available_gate": {
+        "terminal": "T2"
+      }
+    }
+  },
+  "model": "claude-sonnet-4-5-20250929",
+  "system_prompt": "You are FlightOps, an AI Operations Officer for AeroWing Airlines. You have tools that read live flight, maintenance, gate, and weather data. Always use tools to ground your answers in current data rather than guessing. For questions that depend on multiple factors (e.g. whether a flight will depart on time depends on weather AND maintenance AND gate status), call every tool relevant to those factors before answering - do not stop after the first tool call if more information is needed to give a complete answer. If a tool returns {\"status\": \"error\", ...}, explain the failure to the user in plain language rather than making up an answer.",
+  "recorded_at": "2026-08-27T23:46:10Z",
+  "runs_per_variant": 3,
+  "variant_meta": {
+    "complete": {
+      "label": "Complete",
+      "name_channel": "descriptive",
+      "description_channel": "complete",
+      "blurb": "Real tool names, and descriptions that say what each tool returns, what it identifies things by, and when not to use it."
+    },
+    "lazy": {
+      "label": "Lazy",
+      "name_channel": "descriptive",
+      "description_channel": "lazy",
+      "blurb": "Real tool names, but descriptions written in thirty seconds from the function name. The common case."
+    },
+    "prose_only": {
+      "label": "Prose only",
+      "name_channel": "opaque",
+      "description_channel": "complete",
+      "blurb": "Names stripped to tool_a..tool_f, complete descriptions kept. Tests whether the description alone is enough."
+    },
+    "nothing": {
+      "label": "Nothing to go on",
+      "name_channel": "opaque",
+      "description_channel": "lazy",
+      "blurb": "Both channels gutted. The floor, for reference."
+    }
+  },
+  "variants": {
+    "complete": {
+      "schemas": [
+        {
+          "name": "get_flight_status",
+          "description": "Returns the current status (scheduled/delayed/departed/cancelled), the ASSIGNED gate, scheduled departure time, delay in minutes, and the tail number of the specific aircraft operating a flight, identified by its flight number (e.g. 'AA118'). Use this to answer questions about a flight's current or scheduled state, and to find which gate a flight is already departing from. This returns the gate the flight is assigned to - it does NOT find a new or empty gate. It is also the only way to get the tail number for a flight, which other tools need.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "flight_number": {
+                "type": "string",
+                "description": "Airline flight number, carrier code plus digits, e.g. 'AA118', 'UA455', 'DL290'."
+              }
+            },
+            "required": [
+              "flight_number"
+            ]
+          }
+        },
+        {
+          "name": "search_passenger",
+          "description": "Looks up one passenger by their full name and returns their booking reference, the flight number they are booked on, their seat, and their destination. Use this when a question names a person rather than a flight. It returns only booking details - to find out anything about the state of that passenger's flight, pass the returned flight number to get_flight_status.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Passenger's full name, first and last, e.g. 'James Okafor'."
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "name": "maintenance_history",
+          "description": "Returns the last inspection date, hours flown since that inspection, and any outstanding or deferred technical issues for ONE specific physical airframe, identified by its tail number (e.g. 'N317AA'). Use this to judge whether a particular aircraft is airworthy or likely to cause a delay. This is keyed by tail number only - an aircraft type code such as 'B738' will NOT be found. If you have a flight number but not a tail number, call get_flight_status first to obtain it.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "tail_number": {
+                "type": "string",
+                "description": "US aircraft registration ('tail number'), always beginning with N, e.g. 'N317AA'. Not an aircraft type code like 'A320'."
+              }
+            },
+            "required": [
+              "tail_number"
+            ]
+          }
+        },
+        {
+          "name": "find_available_gate",
+          "description": "Returns an OPEN, currently unassigned gate in a given terminal. Use this only when a question asks for a new gate to be found or assigned - for example when a flight has to be moved. Do NOT use this to look up the gate a flight is already departing from; that is get_flight_status. The gate this returns is free precisely because no flight is using it.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "terminal": {
+                "type": "string",
+                "description": "Terminal identifier, e.g. 'T2'."
+              }
+            },
+            "required": [
+              "terminal"
+            ]
+          }
+        },
+        {
+          "name": "lookup_aircraft",
+          "description": "Returns manufacturer, physical dimensions, passenger capacity, and fuel capacity for an aircraft TYPE - the model of aircraft, e.g. 'A320' or 'B738'. Use this for general questions about what a model of aircraft can do, such as seating capacity or fuel and cargo planning. It describes a model in general, not one specific airframe, so it knows nothing about any individual aircraft's condition or maintenance - use maintenance_history for that.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "aircraft_type": {
+                "type": "string",
+                "description": "Aircraft type/model code, e.g. 'A320', 'B738', 'A321'. Not a tail number like 'N317AA'."
+              }
+            },
+            "required": [
+              "aircraft_type"
+            ]
+          }
+        },
+        {
+          "name": "get_weather",
+          "description": "Returns current visibility in kilometres, wind speed, temperature, and conditions at ONE airport, identified by its 3-letter IATA code (e.g. 'SFO', 'JFK', 'ORD'). Use this whenever a question depends on flying conditions - in particular, whether fog, wind, or low visibility at the ORIGIN airport could delay a departure. A flight can show as on time with a clean aircraft and still be at risk because of weather, so check this before judging whether a departure will hold. Requires an airport code - it cannot resolve a flight number or a city name. If you only have a flight number, call get_flight_status first to get the origin airport.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "airport": {
+                "type": "string",
+                "description": "3-letter IATA airport code, e.g. 'SFO'."
+              }
+            },
+            "required": [
+              "airport"
+            ]
+          }
+        }
+      ],
+      "runs": [
+        {
+          "run": 1,
+          "final_answer": "Gate **B14** in Terminal 2 is currently available and can be assigned for flight AA118.",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01LFWbQu9tDX7ccfPmjp6mqE",
+                  "name": "find_available_gate",
+                  "input": {
+                    "terminal": "T2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01LFWbQu9tDX7ccfPmjp6mqE",
+                  "name": "find_available_gate",
+                  "content": {
+                    "status": "ok",
+                    "terminal": "T2",
+                    "gate": "B14"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1775,
+                "output_tokens": 56
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Gate **B14** in Terminal 2 is currently available and can be assigned for flight AA118."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1864,
+                "output_tokens": 25
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "find_available_gate",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "T2"
+              },
+              "result": {
+                "status": "ok",
+                "terminal": "T2",
+                "gate": "B14"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 3158
+        },
+        {
+          "run": 2,
+          "final_answer": "AA118 can be moved to **gate B14** in Terminal 2, which is currently available.",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01X9tCJLpFkAK5RiVveGvKQB",
+                  "name": "find_available_gate",
+                  "input": {
+                    "terminal": "T2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01X9tCJLpFkAK5RiVveGvKQB",
+                  "name": "find_available_gate",
+                  "content": {
+                    "status": "ok",
+                    "terminal": "T2",
+                    "gate": "B14"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1775,
+                "output_tokens": 56
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "AA118 can be moved to **gate B14** in Terminal 2, which is currently available."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1864,
+                "output_tokens": 25
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "find_available_gate",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "T2"
+              },
+              "result": {
+                "status": "ok",
+                "terminal": "T2",
+                "gate": "B14"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 2855
+        },
+        {
+          "run": 3,
+          "final_answer": "AA118 can be moved to **Gate B14** in Terminal 2, which is currently available.",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01YXUMXChP7mfVxqpvCLWFBA",
+                  "name": "find_available_gate",
+                  "input": {
+                    "terminal": "T2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01YXUMXChP7mfVxqpvCLWFBA",
+                  "name": "find_available_gate",
+                  "content": {
+                    "status": "ok",
+                    "terminal": "T2",
+                    "gate": "B14"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1775,
+                "output_tokens": 56
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "AA118 can be moved to **Gate B14** in Terminal 2, which is currently available."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1864,
+                "output_tokens": 25
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "find_available_gate",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "T2"
+              },
+              "result": {
+                "status": "ok",
+                "terminal": "T2",
+                "gate": "B14"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 2825
+        }
+      ]
+    },
+    "lazy": {
+      "schemas": [
+        {
+          "name": "get_flight_status",
+          "description": "Gets flight info.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "flight_number": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "flight_number"
+            ]
+          }
+        },
+        {
+          "name": "search_passenger",
+          "description": "Finds a passenger.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "name": "maintenance_history",
+          "description": "Maintenance info for an aircraft.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "tail_number": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "tail_number"
+            ]
+          }
+        },
+        {
+          "name": "find_available_gate",
+          "description": "Gets a gate.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "terminal": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "terminal"
+            ]
+          }
+        },
+        {
+          "name": "lookup_aircraft",
+          "description": "Aircraft details.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "aircraft_type": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "aircraft_type"
+            ]
+          }
+        },
+        {
+          "name": "get_weather",
+          "description": "Gets weather info.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "airport": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "airport"
+            ]
+          }
+        }
+      ],
+      "runs": [
+        {
+          "run": 1,
+          "final_answer": "Perfect! **Gate B14** is available in Terminal 2 (T2) for flight AA118.",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "I'll help you find an available gate in Terminal 2 for flight AA118."
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_016vF2frdpRom8FEEXf3GsVL",
+                  "name": "find_available_gate",
+                  "input": {
+                    "terminal": "Terminal 2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_016vF2frdpRom8FEEXf3GsVL",
+                  "name": "find_available_gate",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier 'Terminal 2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 984,
+                "output_tokens": 76
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Let me try with just the terminal number:"
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01Qd4NEaoevQPZNbeDNmNY81",
+                  "name": "find_available_gate",
+                  "input": {
+                    "terminal": "2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01Qd4NEaoevQPZNbeDNmNY81",
+                  "name": "find_available_gate",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier '2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1093,
+                "output_tokens": 65
+              }
+            },
+            {
+              "index": 2,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Let me try another common format:"
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_018dEwPrvJjbGFZdgcTqrdb7",
+                  "name": "find_available_gate",
+                  "input": {
+                    "terminal": "T2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_018dEwPrvJjbGFZdgcTqrdb7",
+                  "name": "find_available_gate",
+                  "content": {
+                    "status": "ok",
+                    "terminal": "T2",
+                    "gate": "B14"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1188,
+                "output_tokens": 64
+              }
+            },
+            {
+              "index": 3,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Perfect! **Gate B14** is available in Terminal 2 (T2) for flight AA118."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1284,
+                "output_tokens": 26
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "find_available_gate",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "Terminal 2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier 'Terminal 2'"
+              }
+            },
+            {
+              "name": "find_available_gate",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier '2'"
+              }
+            },
+            {
+              "name": "find_available_gate",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "T2"
+              },
+              "result": {
+                "status": "ok",
+                "terminal": "T2",
+                "gate": "B14"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 6441
+        },
+        {
+          "run": 2,
+          "final_answer": "Perfect! Gate **B14** is available in Terminal 2 (T2) for flight AA118.",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "I'll help you find an available gate in Terminal 2 for flight AA118."
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_014a6iyx9G1YnypxW9jzBDRC",
+                  "name": "find_available_gate",
+                  "input": {
+                    "terminal": "Terminal 2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_014a6iyx9G1YnypxW9jzBDRC",
+                  "name": "find_available_gate",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier 'Terminal 2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 984,
+                "output_tokens": 76
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Let me try a different format for the terminal identifier:"
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01JfnStpE9SPxuerwWaHZymr",
+                  "name": "find_available_gate",
+                  "input": {
+                    "terminal": "2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01JfnStpE9SPxuerwWaHZymr",
+                  "name": "find_available_gate",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier '2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1093,
+                "output_tokens": 67
+              }
+            },
+            {
+              "index": 2,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Let me try with a capital T:"
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01AHYH9M3Qi5ML11Ntuk3VfQ",
+                  "name": "find_available_gate",
+                  "input": {
+                    "terminal": "T2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01AHYH9M3Qi5ML11Ntuk3VfQ",
+                  "name": "find_available_gate",
+                  "content": {
+                    "status": "ok",
+                    "terminal": "T2",
+                    "gate": "B14"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1190,
+                "output_tokens": 65
+              }
+            },
+            {
+              "index": 3,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Perfect! Gate **B14** is available in Terminal 2 (T2) for flight AA118."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1287,
+                "output_tokens": 26
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "find_available_gate",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "Terminal 2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier 'Terminal 2'"
+              }
+            },
+            {
+              "name": "find_available_gate",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier '2'"
+              }
+            },
+            {
+              "name": "find_available_gate",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "T2"
+              },
+              "result": {
+                "status": "ok",
+                "terminal": "T2",
+                "gate": "B14"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 6232
+        },
+        {
+          "run": 3,
+          "final_answer": "I'm unable to find an available gate because the system doesn't recognize \"Terminal 2\" or \"2\" as a valid terminal identifier. Could you please confirm the correct terminal designation used in your system? It might be formatted differently (e.g., \"T2\", \"TERMINAL_2\", etc.).",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "I'll help you find an available gate in Terminal 2 for flight AA118."
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01Ed1168Lk7WDnD5UxEr9owu",
+                  "name": "find_available_gate",
+                  "input": {
+                    "terminal": "Terminal 2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01Ed1168Lk7WDnD5UxEr9owu",
+                  "name": "find_available_gate",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier 'Terminal 2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 984,
+                "output_tokens": 76
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Let me try with a different terminal identifier format:"
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_017QnhiyUKC3T4rTJCnf6c6a",
+                  "name": "find_available_gate",
+                  "input": {
+                    "terminal": "2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_017QnhiyUKC3T4rTJCnf6c6a",
+                  "name": "find_available_gate",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier '2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1093,
+                "output_tokens": 66
+              }
+            },
+            {
+              "index": 2,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "I'm unable to find an available gate because the system doesn't recognize \"Terminal 2\" or \"2\" as a valid terminal identifier. Could you please confirm the correct terminal designation used in your system? It might be formatted differently (e.g., \"T2\", \"TERMINAL_2\", etc.)."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1189,
+                "output_tokens": 67
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "find_available_gate",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "Terminal 2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier 'Terminal 2'"
+              }
+            },
+            {
+              "name": "find_available_gate",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier '2'"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 5186
+        }
+      ]
+    },
+    "prose_only": {
+      "schemas": [
+        {
+          "name": "tool_a",
+          "description": "Returns the current status (scheduled/delayed/departed/cancelled), the ASSIGNED gate, scheduled departure time, delay in minutes, and the tail number of the specific aircraft operating a flight, identified by its flight number (e.g. 'AA118'). Use this to answer questions about a flight's current or scheduled state, and to find which gate a flight is already departing from. This returns the gate the flight is assigned to - it does NOT find a new or empty gate. It is also the only way to get the tail number for a flight, which other tools need.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "flight_number": {
+                "type": "string",
+                "description": "Airline flight number, carrier code plus digits, e.g. 'AA118', 'UA455', 'DL290'."
+              }
+            },
+            "required": [
+              "flight_number"
+            ]
+          }
+        },
+        {
+          "name": "tool_b",
+          "description": "Looks up one passenger by their full name and returns their booking reference, the flight number they are booked on, their seat, and their destination. Use this when a question names a person rather than a flight. It returns only booking details - to find out anything about the state of that passenger's flight, pass the returned flight number to tool_a.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Passenger's full name, first and last, e.g. 'James Okafor'."
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "name": "tool_c",
+          "description": "Returns the last inspection date, hours flown since that inspection, and any outstanding or deferred technical issues for ONE specific physical airframe, identified by its tail number (e.g. 'N317AA'). Use this to judge whether a particular aircraft is airworthy or likely to cause a delay. This is keyed by tail number only - an aircraft type code such as 'B738' will NOT be found. If you have a flight number but not a tail number, call tool_a first to obtain it.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "tail_number": {
+                "type": "string",
+                "description": "US aircraft registration ('tail number'), always beginning with N, e.g. 'N317AA'. Not an aircraft type code like 'A320'."
+              }
+            },
+            "required": [
+              "tail_number"
+            ]
+          }
+        },
+        {
+          "name": "tool_d",
+          "description": "Returns an OPEN, currently unassigned gate in a given terminal. Use this only when a question asks for a new gate to be found or assigned - for example when a flight has to be moved. Do NOT use this to look up the gate a flight is already departing from; that is tool_a. The gate this returns is free precisely because no flight is using it.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "terminal": {
+                "type": "string",
+                "description": "Terminal identifier, e.g. 'T2'."
+              }
+            },
+            "required": [
+              "terminal"
+            ]
+          }
+        },
+        {
+          "name": "tool_e",
+          "description": "Returns manufacturer, physical dimensions, passenger capacity, and fuel capacity for an aircraft TYPE - the model of aircraft, e.g. 'A320' or 'B738'. Use this for general questions about what a model of aircraft can do, such as seating capacity or fuel and cargo planning. It describes a model in general, not one specific airframe, so it knows nothing about any individual aircraft's condition or maintenance - use tool_c for that.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "aircraft_type": {
+                "type": "string",
+                "description": "Aircraft type/model code, e.g. 'A320', 'B738', 'A321'. Not a tail number like 'N317AA'."
+              }
+            },
+            "required": [
+              "aircraft_type"
+            ]
+          }
+        },
+        {
+          "name": "tool_f",
+          "description": "Returns current visibility in kilometres, wind speed, temperature, and conditions at ONE airport, identified by its 3-letter IATA code (e.g. 'SFO', 'JFK', 'ORD'). Use this whenever a question depends on flying conditions - in particular, whether fog, wind, or low visibility at the ORIGIN airport could delay a departure. A flight can show as on time with a clean aircraft and still be at risk because of weather, so check this before judging whether a departure will hold. Requires an airport code - it cannot resolve a flight number or a city name. If you only have a flight number, call tool_a first to get the origin airport.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "airport": {
+                "type": "string",
+                "description": "3-letter IATA airport code, e.g. 'SFO'."
+              }
+            },
+            "required": [
+              "airport"
+            ]
+          }
+        }
+      ],
+      "runs": [
+        {
+          "run": 1,
+          "final_answer": "Gate **B14** in Terminal 2 is currently open and available. You can move flight AA118 to that gate.",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "tool_use",
+                  "id": "toolu_019bTbVjVo8gRvWjiaMMwe3J",
+                  "name": "tool_d",
+                  "input": {
+                    "terminal": "T2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_019bTbVjVo8gRvWjiaMMwe3J",
+                  "name": "tool_d",
+                  "content": {
+                    "status": "ok",
+                    "terminal": "T2",
+                    "gate": "B14"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1763,
+                "output_tokens": 54
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Gate **B14** in Terminal 2 is currently open and available. You can move flight AA118 to that gate."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1850,
+                "output_tokens": 30
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "tool_d",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "T2"
+              },
+              "result": {
+                "status": "ok",
+                "terminal": "T2",
+                "gate": "B14"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 4361
+        },
+        {
+          "run": 2,
+          "final_answer": "Flight AA118 can be moved to **Gate B14** in Terminal 2, which is currently open and unassigned.",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01XijqidiGwiMQufY9555oLN",
+                  "name": "tool_d",
+                  "input": {
+                    "terminal": "T2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01XijqidiGwiMQufY9555oLN",
+                  "name": "tool_d",
+                  "content": {
+                    "status": "ok",
+                    "terminal": "T2",
+                    "gate": "B14"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1763,
+                "output_tokens": 54
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Flight AA118 can be moved to **Gate B14** in Terminal 2, which is currently open and unassigned."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1850,
+                "output_tokens": 30
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "tool_d",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "T2"
+              },
+              "result": {
+                "status": "ok",
+                "terminal": "T2",
+                "gate": "B14"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 3010
+        },
+        {
+          "run": 3,
+          "final_answer": "Gate **B14** in Terminal 2 is currently available. You can move flight AA118 to that gate.",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01SvDzuSkrd8H4vPWdqQTYkw",
+                  "name": "tool_d",
+                  "input": {
+                    "terminal": "T2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01SvDzuSkrd8H4vPWdqQTYkw",
+                  "name": "tool_d",
+                  "content": {
+                    "status": "ok",
+                    "terminal": "T2",
+                    "gate": "B14"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1763,
+                "output_tokens": 54
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Gate **B14** in Terminal 2 is currently available. You can move flight AA118 to that gate."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1850,
+                "output_tokens": 28
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "tool_d",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "T2"
+              },
+              "result": {
+                "status": "ok",
+                "terminal": "T2",
+                "gate": "B14"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 3016
+        }
+      ]
+    },
+    "nothing": {
+      "schemas": [
+        {
+          "name": "tool_a",
+          "description": "Gets flight info.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "flight_number": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "flight_number"
+            ]
+          }
+        },
+        {
+          "name": "tool_b",
+          "description": "Finds a passenger.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "name": "tool_c",
+          "description": "Maintenance info for an aircraft.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "tail_number": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "tail_number"
+            ]
+          }
+        },
+        {
+          "name": "tool_d",
+          "description": "Gets a gate.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "terminal": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "terminal"
+            ]
+          }
+        },
+        {
+          "name": "tool_e",
+          "description": "Aircraft details.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "aircraft_type": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "aircraft_type"
+            ]
+          }
+        },
+        {
+          "name": "tool_f",
+          "description": "Gets weather info.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "airport": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "airport"
+            ]
+          }
+        }
+      ],
+      "runs": [
+        {
+          "run": 1,
+          "final_answer": "I'm unable to retrieve available gates for Terminal 2 - the system is not finding that terminal identifier. Could you specify which terminal designation format is used at your airport (e.g., \"T2\", \"B\", \"North\", etc.)? This will help me find an available gate for flight AA118.",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01WWzyLbqv5BY7o9QooGMs9Z",
+                  "name": "tool_d",
+                  "input": {
+                    "terminal": "2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01WWzyLbqv5BY7o9QooGMs9Z",
+                  "name": "tool_d",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier '2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 980,
+                "output_tokens": 53
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Let me try getting available gate information for Terminal 2 with a different format:"
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_014A2vGhF5C8LGPaGVCUMuLg",
+                  "name": "tool_d",
+                  "input": {
+                    "terminal": "Terminal 2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_014A2vGhF5C8LGPaGVCUMuLg",
+                  "name": "tool_d",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier 'Terminal 2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1064,
+                "output_tokens": 73
+              }
+            },
+            {
+              "index": 2,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "I'm unable to retrieve available gates for Terminal 2 - the system is not finding that terminal identifier. Could you specify which terminal designation format is used at your airport (e.g., \"T2\", \"B\", \"North\", etc.)? This will help me find an available gate for flight AA118."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1170,
+                "output_tokens": 68
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "tool_d",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier '2'"
+              }
+            },
+            {
+              "name": "tool_d",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "Terminal 2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier 'Terminal 2'"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 6051
+        },
+        {
+          "run": 2,
+          "final_answer": "Perfect! Flight AA118 can be moved to **Gate B14** in Terminal 2 (T2). \n\nCurrently, AA118 is at Gate B12, and Gate B14 is available in the same terminal.",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "I'll help you find an available gate in Terminal 2 for flight AA118."
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01FT2cKvrvR3vxg6U3Dd1HDf",
+                  "name": "tool_d",
+                  "input": {
+                    "terminal": "Terminal 2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01FT2cKvrvR3vxg6U3Dd1HDf",
+                  "name": "tool_d",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier 'Terminal 2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 980,
+                "output_tokens": 74
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Let me try with a different format for the terminal identifier:"
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01Gsg8yjDR8ApEvMqn54UoMF",
+                  "name": "tool_d",
+                  "input": {
+                    "terminal": "2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01Gsg8yjDR8ApEvMqn54UoMF",
+                  "name": "tool_d",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier '2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1087,
+                "output_tokens": 66
+              }
+            },
+            {
+              "index": 2,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Let me also check the current flight information to see what format the system uses:"
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_0122yypRUd6jRJtuAm7JMDnM",
+                  "name": "tool_a",
+                  "input": {
+                    "flight_number": "AA118"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_0122yypRUd6jRJtuAm7JMDnM",
+                  "name": "tool_a",
+                  "content": {
+                    "status": "ok",
+                    "flight_number": "AA118",
+                    "flight_status": "scheduled",
+                    "gate": "B12",
+                    "departure_time": "2026-08-27T07:45:00",
+                    "delay_minutes": 0,
+                    "tail_number": "N317AA",
+                    "aircraft_type": "A320",
+                    "origin": "SFO",
+                    "destination": "JFK"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1183,
+                "output_tokens": 73
+              }
+            },
+            {
+              "index": 3,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Let me try the gate tool with different terminal format options:"
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01Ws1Qhmif6ZEZSZZDdXrohz",
+                  "name": "tool_d",
+                  "input": {
+                    "terminal": "T2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01Ws1Qhmif6ZEZSZZDdXrohz",
+                  "name": "tool_d",
+                  "content": {
+                    "status": "ok",
+                    "terminal": "T2",
+                    "gate": "B14"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1359,
+                "output_tokens": 67
+              }
+            },
+            {
+              "index": 4,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Perfect! Flight AA118 can be moved to **Gate B14** in Terminal 2 (T2). \n\nCurrently, AA118 is at Gate B12, and Gate B14 is available in the same terminal."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1458,
+                "output_tokens": 52
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "tool_d",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "Terminal 2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier 'Terminal 2'"
+              }
+            },
+            {
+              "name": "tool_d",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier '2'"
+              }
+            },
+            {
+              "name": "tool_a",
+              "resolved": "get_flight_status",
+              "input": {
+                "flight_number": "AA118"
+              },
+              "result": {
+                "status": "ok",
+                "flight_number": "AA118",
+                "flight_status": "scheduled",
+                "gate": "B12",
+                "departure_time": "2026-08-27T07:45:00",
+                "delay_minutes": 0,
+                "tail_number": "N317AA",
+                "aircraft_type": "A320",
+                "origin": "SFO",
+                "destination": "JFK"
+              }
+            },
+            {
+              "name": "tool_d",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "T2"
+              },
+              "result": {
+                "status": "ok",
+                "terminal": "T2",
+                "gate": "B14"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 9981
+        },
+        {
+          "run": 3,
+          "final_answer": "Perfect! Gate **B14** is available in Terminal 2 (T2) for flight AA118.",
+          "turns": [
+            {
+              "index": 0,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "I'll help you find an available gate in Terminal 2 for flight AA118."
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_013pp6ws6XaZjj2MimvkAvK5",
+                  "name": "tool_d",
+                  "input": {
+                    "terminal": "Terminal 2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_013pp6ws6XaZjj2MimvkAvK5",
+                  "name": "tool_d",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier 'Terminal 2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 980,
+                "output_tokens": 74
+              }
+            },
+            {
+              "index": 1,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Let me try with a different format for the terminal identifier:"
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_0193iogrQVRY7qYZ9JMvz6gs",
+                  "name": "tool_d",
+                  "input": {
+                    "terminal": "2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_0193iogrQVRY7qYZ9JMvz6gs",
+                  "name": "tool_d",
+                  "content": {
+                    "status": "error",
+                    "message": "No terminal found with identifier '2'"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1087,
+                "output_tokens": 66
+              }
+            },
+            {
+              "index": 2,
+              "stop_reason": "tool_use",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Let me try another variation:"
+                },
+                {
+                  "type": "tool_use",
+                  "id": "toolu_01892Qb2KrEWrPtzifqXyAFy",
+                  "name": "tool_d",
+                  "input": {
+                    "terminal": "T2"
+                  }
+                }
+              ],
+              "tool_results": [
+                {
+                  "tool_use_id": "toolu_01892Qb2KrEWrPtzifqXyAFy",
+                  "name": "tool_d",
+                  "content": {
+                    "status": "ok",
+                    "terminal": "T2",
+                    "gate": "B14"
+                  }
+                }
+              ],
+              "usage": {
+                "input_tokens": 1183,
+                "output_tokens": 61
+              }
+            },
+            {
+              "index": 3,
+              "stop_reason": "end_turn",
+              "assistant": [
+                {
+                  "type": "text",
+                  "text": "Perfect! Gate **B14** is available in Terminal 2 (T2) for flight AA118."
+                }
+              ],
+              "tool_results": [],
+              "usage": {
+                "input_tokens": 1276,
+                "output_tokens": 26
+              }
+            }
+          ],
+          "tool_calls": [
+            {
+              "name": "tool_d",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "Terminal 2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier 'Terminal 2'"
+              }
+            },
+            {
+              "name": "tool_d",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "2"
+              },
+              "result": {
+                "status": "error",
+                "message": "No terminal found with identifier '2'"
+              }
+            },
+            {
+              "name": "tool_d",
+              "resolved": "find_available_gate",
+              "input": {
+                "terminal": "T2"
+              },
+              "result": {
+                "status": "ok",
+                "terminal": "T2",
+                "gate": "B14"
+              }
+            }
+          ],
+          "hit_iteration_limit": false,
+          "elapsed_ms": 6717
+        }
+      ]
+    }
+  }
+}

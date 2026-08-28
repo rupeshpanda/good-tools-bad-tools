@@ -1,0 +1,20 @@
+[
+  {
+    "id": "wasted-call",
+    "title": "The argument nobody specified",
+    "failure_mode": "Wasted call",
+    "question": "Will UA455 make it out of Chicago tonight?"
+  },
+  {
+    "id": "thrashing",
+    "title": "The agent that could not find the terminal",
+    "failure_mode": "Thrashing",
+    "question": "AA118 needs to be moved to a different gate in Terminal 2. Which one?"
+  },
+  {
+    "id": "wrong-airport",
+    "title": "The wrong end of the route",
+    "failure_mode": "Silently wrong",
+    "question": "Should I be worried about James Okafor's flight?"
+  }
+]
