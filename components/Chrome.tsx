@@ -1,7 +1,7 @@
 const SITE = "https://eleganceai.ai";
 const REPO = "https://github.com/rupeshpanda/good-tools-bad-tools";
 
-export function Header({ current }: { current?: "lab" }) {
+export function Header({ current }: { current?: "lab" | "guide" }) {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-bg/85 backdrop-blur-sm">
       <nav
@@ -20,13 +20,19 @@ export function Header({ current }: { current?: "lab" }) {
         >
           Lab
         </a>
-        <a
-          href={REPO}
-          aria-current={current === "lab" ? "page" : undefined}
-          className="ml-auto text-muted transition-colors hover:text-ink"
-        >
-          Source ↗
-        </a>
+        <span className="ml-auto flex items-center gap-5">
+          {current === "guide" && (
+            <a
+              href="/lab/good-tools-bad-tools"
+              className="text-muted transition-colors hover:text-ink"
+            >
+              ← Back to the demo
+            </a>
+          )}
+          <a href={REPO} className="text-muted transition-colors hover:text-ink">
+            Source ↗
+          </a>
+        </span>
       </nav>
     </header>
   );

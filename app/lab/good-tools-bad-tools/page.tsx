@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Header, Footer } from "@/components/Chrome";
 import LiveDemo from "@/components/LiveDemo";
 
@@ -99,6 +100,17 @@ export default function LabPage() {
               Which is why the least glamorous artefact in an agentic system — a
               sentence describing a function — deserves more care than it usually
               gets. It is not a comment. It is the contract.
+            </p>
+
+            <p className="mt-6 text-[15px] leading-relaxed text-ink">
+              Want the mechanism in more detail — what a tool is, and the exact
+              JSON that crosses the wire?{" "}
+              <Link
+                href="/lab/good-tools-bad-tools/guide"
+                className="text-accent underline underline-offset-2 hover:text-accent-hover"
+              >
+                Read the guide →
+              </Link>
             </p>
 
             <div className="mt-8 rounded-lg border border-border bg-bg-secondary p-6">
