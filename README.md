@@ -14,13 +14,22 @@ Live: **https://eleganceai.ai/lab/good-tools-bad-tools**
 
 ## What this is
 
-A small flight-operations agent (`FlightOps`) with six read-only tools, plus a
-capture harness that runs it against four different sets of tool declarations
-and records every exchange at the wire level. The site replays those recordings.
+A small flight-operations agent (`FlightOps`) with six read-only tools.
 
-Nothing on the site calls a model at request time. These failures are
-probabilistic, so a live run could accidentally succeed and quietly contradict
-the page illustrating it. Every recorded run is published — none are chosen.
+The **site** is a live demo: you ask one question, and it runs against a lazy
+set of tool descriptions and a careful set at the same time, showing the tool
+call each one constructed and the answer each one reached. Both variants are
+real API calls made when you press the button.
+
+The **repo** additionally holds the offline experiment that the site's
+supporting figures come from: a capture harness that runs the same agent
+against four sets of tool declarations and records every exchange at the wire
+level. Every recorded run is committed — none are chosen.
+
+Because the failures are probabilistic, a live run can occasionally come out
+differently. The page generates its summary line from the two transcripts it
+just produced, so it describes what actually happened rather than asserting a
+result the visitor cannot see.
 
 ## The 2×2
 
@@ -88,13 +97,22 @@ agent/                  the Python agent and the capture harness
   reflector.py          a tool-free call that critiques the finished run
   record.py             runs every scenario x variant and captures the transcripts
   export_wall.py        pairs each function's real source with its declarations
+  export_schemas.py     generates lib/live/schemas.ts from the Python schemas
 data/traces/*.json      every recorded run, committed
-data/wall.json          generated code/schema pairing for the guide page
-app/, components/, lib/ the Next.js site
+data/wall.json          generated code/schema pairing
+lib/live/               the live demo: TS port of the tools, plus the agent loop
+  schemas.ts            GENERATED - do not edit; run agent/export_schemas.py
+app/api/.../run         the live endpoint, rate limited, one variant per call
+app/, components/       the Next.js site
 ```
 
-`export_wall.py` reads the function source with `inspect.getsource`, so the
-Python shown on the site cannot drift from the Python that ran.
+Two generated files keep the site honest. `export_wall.py` reads function
+source with `inspect.getsource`, and `export_schemas.py` emits the TypeScript
+tool declarations from the Python ones — so the live demo and the recorded
+experiment cannot silently end up describing different tools.
+
+`lib/live/tools.ts` is a hand-port of `agent/tools.py` and is the one place
+drift is still possible. Keep them in step.
 
 ## Reproduce
 
@@ -113,8 +131,12 @@ Then the site:
 
 ```bash
 npm install
+cp .env.example .env.local   # ANTHROPIC_API_KEY, same key
 npm run dev
 ```
+
+The live endpoint needs `ANTHROPIC_API_KEY` in the environment. Without it the
+demo returns a clear "not configured" message rather than failing obscurely.
 
 Expect your numbers to differ slightly. That is the point.
 
