@@ -33,7 +33,7 @@ export default function OpengraphImage() {
           background: BG,
           display: "flex",
           flexDirection: "column",
-          padding: "64px 72px",
+          padding: "56px 72px",
           fontFamily: "sans-serif",
         }}
       >
@@ -53,8 +53,8 @@ export default function OpengraphImage() {
 
         <div
           style={{
-            marginTop: 18,
-            fontSize: 76,
+            marginTop: 14,
+            fontSize: 68,
             color: NAVY,
             fontWeight: 700,
             letterSpacing: -1.5,
@@ -65,8 +65,8 @@ export default function OpengraphImage() {
 
         <div
           style={{
-            marginTop: 16,
-            fontSize: 27,
+            marginTop: 14,
+            fontSize: 26,
             color: INK,
             lineHeight: 1.4,
             maxWidth: 980,
@@ -76,7 +76,7 @@ export default function OpengraphImage() {
           tool descriptions differ.
         </div>
 
-        <div style={{ display: "flex", gap: 24, marginTop: 40 }}>
+        <div style={{ display: "flex", gap: 24, marginTop: 34 }}>
           <Panel
             label="Lazy description"
             colour={DANGER}
@@ -93,7 +93,7 @@ export default function OpengraphImage() {
 
         <div
           style={{
-            marginTop: "auto",
+            marginTop: 30,
             display: "flex",
             fontSize: 23,
             color: MUTED,
@@ -127,7 +127,7 @@ function Panel({
         border: `2px solid ${colour}40`,
         borderRadius: 12,
         background: "#FFFFFF",
-        padding: "22px 26px",
+        padding: "20px 26px",
       }}
     >
       <div
