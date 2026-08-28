@@ -21,7 +21,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Good Tools, Bad Tools | Elegance AI",
   description:
-    "The model never sees your code — only the sentence you wrote about it. A recorded 2x2 experiment on how tool names and tool descriptions change what an AI agent actually does.",
+    "The model never sees your code. It sees the declaration you wrote about it. A live comparison of how tool descriptions change what an AI agent actually does.",
 };
 
 export default function RootLayout({

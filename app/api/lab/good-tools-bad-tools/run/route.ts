@@ -12,15 +12,15 @@ const MAX_QUESTION_CHARS = 200;
  *
  * The page fires two of these in parallel, one per variant, so each panel
  * fills the moment its own run finishes rather than both waiting on the
- * slower one. The lazy agent usually answers first — it asks fewer questions
- * before being sure — which is worth seeing happen.
+ * slower one. The lazy agent usually answers first. It asks fewer questions
+ * before being sure. Which is worth seeing happen.
  */
 
 /**
  * A crude relevance gate. This endpoint is a public button that spends the
  * site owner's API budget, so it only answers questions that plausibly
  * concern the fictional airline it has tools for. It is a cost control, not
- * a security boundary — the real protections are the rate limit, the length
+ * a security boundary. The real protections are the rate limit, the length
  * cap, and the fact that every tool here is read-only over hard-coded data.
  */
 const DOMAIN_HINTS = [
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "This agent only has tools for one fictional airline — flights, gates, " +
+          "This agent only has tools for one fictional airline. flights, gates, " +
           "passengers, aircraft maintenance, and airport weather. Try asking " +
           "about one of those.",
       },

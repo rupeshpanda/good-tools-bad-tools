@@ -9,7 +9,7 @@ import { loadWall, wallTotals } from "@/lib/wall";
 export const metadata: Metadata = {
   title: "What a tool actually is | Good Tools, Bad Tools",
   description:
-    "A tool is a normal function plus a sentence describing it. The model never sees the function. Walk the full tool-calling lifecycle on a real recorded transcript.",
+    "A tool is code you already wrote plus a declaration describing it. The model never sees the code. Walk the tool calling lifecycle on a real recorded transcript.",
 };
 
 export default function GuidePage() {
@@ -27,21 +27,21 @@ export default function GuidePage() {
         <section className="py-16">
           <SectionLabel>Part one · the mechanism</SectionLabel>
           <h1 className="max-w-3xl font-serif text-4xl leading-tight text-navy md:text-5xl">
-            A tool is a function you wrote, plus a sentence about it. The model
-            only gets the sentence.
+            A tool is code you already wrote, plus a declaration describing it.
+            The model only ever sees the declaration.
           </h1>
           <p className="mt-6 max-w-2xl text-[17px] leading-relaxed text-ink">
-            Almost everything that goes wrong with tool calling follows from
-            that one asymmetry. This page walks the mechanism end to end on a
-            real recorded transcript — what a tool is, what actually crosses
-            the wire, and who runs what. The{" "}
+            Almost everything that goes wrong with tool calling follows from that
+            one asymmetry. This page walks the mechanism end to end on a real
+            recorded transcript. What a tool is. What actually crosses the wire.
+            Who runs what. The{" "}
             <Link
               href="/lab/good-tools-bad-tools"
               className="text-accent underline underline-offset-2 hover:text-accent-hover"
             >
               live demo
             </Link>{" "}
-            then lets you watch what happens when the sentence is bad.
+            then lets you watch what happens when the sentence is a bad one.
           </p>
         </section>
 
@@ -54,24 +54,26 @@ export default function GuidePage() {
           <div className="mt-5 grid gap-8 md:grid-cols-2">
             <div className="space-y-4 text-[15.5px] leading-relaxed text-ink">
               <p>
-                The six tools in this lab read flight, passenger, maintenance,
-                gate, and weather records for a fictional US airline. Each one
-                is an ordinary Python function. They worked before any model was
-                involved, and they would keep working if you deleted the model
-                tomorrow.
+                A tool can wrap anything you already have: an API call, a
+                database query, an MCP operation, a step in a workflow. The six
+                in this lab happen to be ordinary Python functions that read
+                flight, passenger, maintenance, gate, and weather records for a
+                fictional US airline. They worked before any model was involved
+                and they would keep working if you deleted the model tomorrow.
               </p>
               <p>
-                What makes a function a <em>tool</em> is that somewhere else you
-                wrote a description of it for a model to read. That description
-                is not documentation — nobody on your team will ever read it.
-                It is an interface, and it is the only one the model has.
+                What makes that code a <em>tool</em> is the declaration you
+                write alongside it: a name, a description, and a schema for the
+                parameters. That declaration is not documentation. Nobody on
+                your team will ever read it. It is an interface, and it is the
+                only one the model has.
               </p>
               <p className="border-l-2 border-accent pl-4 text-muted">
                 Turn on <strong className="text-ink">Show the model&apos;s
-                view</strong> below. What remains is genuinely all it gets: not
-                the function body, not the docstring, not the data. It cannot
-                check whether your sentence is true, and it will not notice if
-                it is wrong.
+                view</strong> below. What remains is genuinely everything it
+                gets. Not the function body, not the docstring, not the data. It
+                cannot check whether your sentence is true, and it will not
+                notice when it is wrong.
               </p>
             </div>
 
@@ -102,15 +104,14 @@ export default function GuidePage() {
             <p>
               This is the part most explanations skip, and it is the part that
               matters for anyone responsible for what an agent is allowed to do.
-              When a model &ldquo;calls a tool&rdquo;, it does not execute
-              anything. It returns a block of JSON containing a name, some
-              arguments, and an id.
+              When a model calls a tool, it does not execute anything. It returns
+              a block of JSON containing a name, some arguments, and an id.
             </p>
             <p>
-              That is a <em>request</em>. Your own loop reads it and decides
-              what to do — call the function, refuse, log it, rate-limit it, or
-              stop and ask a human. Every side effect an agentic system has ever
-              produced was a line of your code choosing to honour a request.
+              That is a <em>request</em>. Your own loop reads it and decides what
+              to do. Call the function. Refuse. Log it. Rate limit it. Stop and
+              ask a human. Every side effect an agentic system has ever produced
+              was a line of your code choosing to honour a request.
             </p>
             <p className="text-muted">
               Step through a real exchange below. It is run 1 of the{" "}
@@ -121,7 +122,7 @@ export default function GuidePage() {
               <code className="font-mono text-[13.5px] text-ink">
                 {scenario.model}
               </code>
-              . Watch for the gold step — that one is yours, not the
+              . Watch for the gold step. That one is yours, not the
               model&apos;s.
             </p>
           </div>
@@ -141,10 +142,10 @@ export default function GuidePage() {
             Four questions, or the model guesses
           </h2>
           <p className="mt-5 max-w-2xl text-[15.5px] leading-relaxed text-ink">
-            A useful test: hand your tool declaration to a competent stranger
-            with no access to the codebase, and ask them to use it correctly on
-            the first try. Whatever they have to ask you is what is missing.
-            Four questions come up every time.
+            Here is a useful test. Hand your tool declaration to a competent
+            stranger with no access to the codebase and ask them to use it
+            correctly on the first try. Whatever they have to ask you is what is
+            missing. Four questions come up every time.
           </p>
 
           <ol className="mt-8 grid gap-5 md:grid-cols-2">
@@ -157,7 +158,7 @@ export default function GuidePage() {
             <Question
               n="02"
               q="What does it identify things by?"
-              why="The single highest-value sentence you can write. A name can express what a tool does; it can never express what its argument should look like."
+              why="This is the single highest value sentence you can write. A name can express what a tool does. It can never express what its argument should look like."
               example="…identified by its 3-letter IATA code (e.g. 'SFO')…"
             />
             <Question
@@ -169,8 +170,8 @@ export default function GuidePage() {
             <Question
               n="04"
               q="When should it NOT be used?"
-              why="Tools sit next to near-neighbours. Saying which one this isn't is often faster than describing what it is."
-              example="…this returns the gate a flight is assigned to — it does NOT find an empty gate…"
+              why="Tools sit next to near neighbours. Saying which one this is not is often faster than describing what it is."
+              example="…this returns the gate a flight is assigned to. It does NOT find an empty gate…"
             />
           </ol>
 
@@ -178,15 +179,18 @@ export default function GuidePage() {
             <p className="max-w-3xl text-[15px] leading-relaxed text-ink">
               Question 02 turned out to carry almost all the weight. Every
               failure this lab was able to reproduce came from an{" "}
-              <strong>argument</strong>, not from picking the wrong tool — and
-              an argument format is precisely the thing a well-chosen function
-              name cannot tell you.{" "}
+              <strong>argument</strong>, not from picking the wrong tool. The
+              name and the schema both reach the model, but an argument format
+              is precisely the thing a well chosen function name cannot tell
+              you. The full experiment behind that claim, all 36
+              recorded runs of it, is in the repository.{" "}
               <Link
                 href="/lab/good-tools-bad-tools"
                 className="text-accent underline underline-offset-2 hover:text-accent-hover"
               >
-                Watch it happen in the demo →
+                Watch it happen in the demo
               </Link>
+              .
             </p>
           </div>
         </section>
@@ -200,8 +204,8 @@ export default function GuidePage() {
           <div className="mt-5 grid gap-8 md:grid-cols-2">
             <div className="space-y-4 text-[15.5px] leading-relaxed text-ink">
               <p>
-                Grounding a model in retrieved documents is read-only and fails
-                gently: fetch the wrong passage and you get a worse answer, but
+                Grounding a model in retrieved documents is read only and fails
+                gently. Fetch the wrong passage and you get a worse answer, but
                 nothing in the world changes. Grounding it in{" "}
                 <em>functions</em> is different in kind. The wrong tool, or the
                 right tool with the wrong argument, does something.
@@ -209,28 +213,26 @@ export default function GuidePage() {
               <p>
                 In this lab the worst case is a confusing answer, because every
                 tool here only reads. In a system with write tools it is a
-                cancelled booking or a reassigned gate — and the error surface
+                cancelled booking or a reassigned gate. The error surface also
                 compounds across steps, because each call&apos;s output becomes
                 the next call&apos;s input.
               </p>
             </div>
             <div className="space-y-4 text-[15.5px] leading-relaxed text-ink">
               <p>
-                Retrieval risk is about information quality. Tool-calling risk
-                is about information quality <em>and</em> action correctness{" "}
-                <em>and</em> sequencing.
+                Retrieval risk is about information quality. Tool calling risk is
+                about information quality, action correctness, and sequencing.
               </p>
               <p>
                 Which is why the interface between your code and the model
-                deserves more care than a rushed sentence — and why the rest of
-                this lab is spent measuring exactly how much that sentence is
-                worth.
+                deserves more care than a rushed sentence, and why the rest of
+                this lab is spent measuring exactly what that sentence is worth.
               </p>
               <Link
                 href="/lab/good-tools-bad-tools"
                 className="inline-block rounded bg-navy px-5 py-2.5 text-[14.5px] text-white transition-opacity hover:opacity-90"
               >
-                Run the demo →
+                Run the demo
               </Link>
             </div>
           </div>

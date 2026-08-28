@@ -3,7 +3,7 @@
  *
  * In-memory and therefore per-instance: a serverless deployment running
  * several instances multiplies the effective allowance, and a cold start
- * resets it. That is a real limitation and it is fine here — the goal is to
+ * resets it. That is a real limitation and it is fine here. The goal is to
  * stop a bored visitor holding down a button, not to defeat a determined
  * attacker. A shared store would be the answer if this ever needed to be
  * airtight.

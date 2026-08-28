@@ -4,13 +4,13 @@ import React from "react";
  * Minimal renderer for the model's own answers.
  *
  * The transcripts are stored exactly as the model produced them, markdown and
- * all — rewriting them would undermine the point of publishing raw recordings.
+ * all. Rewriting them would undermine the point of publishing raw recordings.
  * So the markdown is rendered here at display time instead: bold, bullets, and
  * paragraph breaks, which is everything these answers actually use.
  *
  * Deliberately not a full markdown library. Answers come from a recorded file
  * in this repo, but rendering model output as raw HTML is a habit worth not
- * forming — this only ever emits text nodes and <strong>.
+ * forming. This only ever emits text nodes and <strong>.
  */
 
 function renderInline(text: string, keyPrefix: string): React.ReactNode[] {

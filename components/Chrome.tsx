@@ -43,7 +43,7 @@ export function Footer() {
     <footer className="mt-8 border-t border-border">
       <div className="mx-auto max-w-5xl px-5 py-10 text-sm text-muted">
         <p className="mb-3 max-w-3xl">
-          Synthetic data only — no real airline, aircraft, or passenger is
+          Synthetic data only. No real airline, aircraft, or passenger is
           represented. Runs are made live against{" "}
           <code className="font-mono text-[12.5px] text-ink">
             claude-sonnet-4-5

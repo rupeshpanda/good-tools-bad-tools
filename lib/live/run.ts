@@ -7,7 +7,7 @@ import { SYSTEM_PROMPT, VARIANTS, type VariantKey } from "./schemas";
  *
  * This is the same loop as agent/agent.py: ask, receive a tool request,
  * run the function ourselves, hand the result back, repeat until the model
- * stops asking. The model never executes anything — it returns a name and
+ * stops asking. The model never executes anything. It returns a name and
  * some arguments, and the `executeTool` line below is where a human-written
  * program decides to honour that. That is the step the page is built to make
  * visible.

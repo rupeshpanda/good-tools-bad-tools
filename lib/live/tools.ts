@@ -137,7 +137,7 @@ const PASSENGERS: Record<
   },
 };
 
-// Keyed by tail number. No key here is an aircraft type — passing "B738"
+// Keyed by tail number. No key here is an aircraft type. Passing "B738"
 // returns a not-found error, which is deliberate.
 const MAINTENANCE: Record<
   string,

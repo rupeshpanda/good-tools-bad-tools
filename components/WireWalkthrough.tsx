@@ -5,7 +5,7 @@ import FormattedText from "./FormattedText";
 import type { Run } from "@/lib/traces";
 
 /**
- * "The Wire" — one recorded exchange, stepped through message by message,
+ * "The Wire". One recorded exchange, stepped through message by message,
  * showing the actual JSON that crossed between the model and the program.
  *
  * The step this component exists for is `execute`. Everything else on the
@@ -13,7 +13,7 @@ import type { Run } from "@/lib/traces";
  * step the model has no part in: your own process reading a request and
  * deciding to honour it. People assume the model runs their functions. It
  * cannot. It emits a name and some arguments, and something you wrote
- * chooses what to do about that — which is where every safeguard in an
+ * chooses what to do about that. Which is where every safeguard in an
  * agentic system has to live.
  */
 

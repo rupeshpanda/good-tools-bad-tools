@@ -4,11 +4,11 @@ import { useState } from "react";
 import type { WallTool } from "@/lib/wall";
 
 /**
- * "The Wall" — the central idea of the lab, made physical.
+ * "The Wall". The central idea of the lab, made physical.
  *
  * Left: the Python function you wrote. Right: the tool declaration, which is
  * the only thing the model ever receives. The blind toggle removes the left
- * panel entirely, because that is the model's actual field of view — it has
+ * panel entirely, because that is the model's actual field of view. It has
  * never seen your code, cannot infer it, and will not notice if the prose
  * describing it is wrong.
  */
@@ -120,7 +120,7 @@ export default function TheWall({
 
       <div className="rule-top bg-bg-secondary px-4 py-3 text-[13px] leading-relaxed text-muted">
         Across all six tools: <strong className="text-ink">{totals.pythonLines} lines</strong>{" "}
-        of Python, none of it visible to the model — against{" "}
+        of Python, none of it visible to the model, against{" "}
         <strong className="text-ink">
           {lazy ? totals.lazyChars : totals.completeChars} characters
         </strong>{" "}

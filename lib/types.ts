@@ -31,7 +31,7 @@ export interface ToolSchema {
 }
 
 export interface ToolCall {
-  /** The name the model asked for — `tool_f` in the opaque variants. */
+  /** The name the model asked for. `tool_f` in the opaque variants. */
   name: string;
   /** The Python function that actually ran. Comparable across variants. */
   resolved: string;
@@ -101,8 +101,8 @@ export interface Scenario {
    ---------------------------------------------------------------------------
    A run is judged on two independent axes, because the whole point of this
    lab is that they come apart. `succeeded` asks whether the machinery worked
-   — did every tool call return ok. `correct` asks whether the agent actually
-   answered the question — did it call the required tools with the required
+  . did every tool call return ok. `correct` asks whether the agent actually
+   answered the question. did it call the required tools with the required
    arguments.
 
    The `wrong-airport` scenario is the case that matters: succeeded = true,
@@ -166,7 +166,7 @@ export function variantScore(scenario: Scenario, variant: VariantKey) {
     verdicts,
     correct: verdicts.filter((v) => v.correct).length,
     total: verdicts.length,
-    /** Runs that failed while every tool call returned ok — the silent ones. */
+    /** Runs that failed while every tool call returned ok. the silent ones. */
     silentlyWrong: verdicts.filter((v) => !v.correct && v.succeeded).length,
     totalCalls: verdicts.reduce((n, v) => n + v.callCount, 0),
     totalErrors: verdicts.reduce((n, v) => n + v.errorCount, 0),

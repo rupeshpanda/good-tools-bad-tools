@@ -41,7 +41,7 @@ const PRESETS = [
     /** Only set where we have recorded evidence for this exact question. */
     focusTool: "get_weather",
     recorded:
-      "In 3 of 3 recorded runs, the lazy agent checked the weather at JFK — the destination — instead of SFO, where the aircraft actually takes off.",
+      "In 3 of 3 recorded runs, the lazy agent checked the weather at JFK, the destination, instead of SFO, where the aircraft has to take off.",
     watch: "Watch which airport each one checks the weather for.",
   },
   {
@@ -49,7 +49,7 @@ const PRESETS = [
     question: "AA118 needs to be moved to a different gate in Terminal 2. Which one?",
     focusTool: "find_available_gate",
     recorded:
-      "In 3 of 3 recorded runs, the lazy agent guessed 'Terminal 2' and then '2' before finding 'T2' — and in one run it never got there at all.",
+      "In 3 of 3 recorded runs, the lazy agent guessed 'Terminal 2', then '2', before finding 'T2'. In one run it never got there at all.",
     watch: "Watch how each one writes the terminal name.",
   },
   {
@@ -57,7 +57,7 @@ const PRESETS = [
     question: "Will UA455 make it out of Chicago tonight?",
     focusTool: "get_weather",
     recorded:
-      "In 3 of 3 recorded runs, the lazy agent passed 'Chicago' to a tool that only accepts airport codes, wasting a call before recovering.",
+      "In 3 of 3 recorded runs, the lazy agent passed 'Chicago' to a tool that only accepts airport codes. It wasted a call before recovering.",
     watch: "Watch what each one passes as the airport.",
   },
 ];
@@ -167,7 +167,7 @@ export default function LiveDemo() {
             setQuestion(e.target.value);
             setPreset(null);
           }}
-          placeholder="…or ask your own question about flights, gates, passengers, aircraft, or airport weather."
+          placeholder="Or ask your own question about flights, gates, passengers, aircraft, or airport weather."
           className="w-full resize-none rounded border border-border bg-bg-secondary px-3.5 py-3 text-[15px] leading-relaxed text-ink outline-none placeholder:text-muted focus:border-accent"
         />
 
@@ -177,11 +177,11 @@ export default function LiveDemo() {
             disabled={loading || !question.trim()}
             className="rounded bg-accent px-6 py-2.5 text-[15px] font-medium text-white transition-opacity hover:bg-accent-hover disabled:opacity-45"
           >
-            {loading ? "Running both agents…" : "Run both agents"}
+            {loading ? "Running both agents" : "Run both agents"}
           </button>
           <span className="text-[13px] text-muted">
-            One question. Two agents. The only difference is how their tools
-            are described.
+            One question, two agents. The only difference is how their tools
+            are described. Each run takes about ten seconds.
           </span>
         </div>
 
@@ -238,7 +238,7 @@ export default function LiveDemo() {
  * Which tool's description to show in step 1.
  *
  * The interesting tool is the one whose argument the two agents disagree
- * about — that is where a description earns its keep. Failing that, the last
+ * about. That is where a description earns its keep. Failing that, the last
  * tool called (agents tend to save the decisive lookup for last), and failing
  * that, the preset's nominated tool.
  */
@@ -270,7 +270,7 @@ function describe(variant: "lazy" | "complete", tool: string): string {
 /**
  * Describes what actually happened in THIS run.
  *
- * The demo is live, so the lazy agent does not fail identically every time —
+ * The demo is live, so the lazy agent does not fail identically every time , 
  * sometimes it makes a wrong call and recovers, sometimes it gets there
  * cleanly. Hard-coding "the lazy one checked the wrong airport" would
  * eventually contradict what is on screen, so the callout is generated from
@@ -290,9 +290,9 @@ function diagnose(lazy: Run, complete: Run): { headline: string; tone: "bad" | "
     const first = failed[0];
     return {
       tone: "bad",
-      headline: `This run, the lazy agent called ${first.tool} with ${JSON.stringify(
+      headline: `On this run the lazy agent called ${first.tool} with ${JSON.stringify(
         Object.values(first.input)[0],
-      )} and it failed — ${lazy.errorCount} failed call${
+      )} and it failed. That is ${lazy.errorCount} failed call${
         lazy.errorCount === 1 ? "" : "s"
       } in total. The careful agent made none.`,
     };
@@ -302,21 +302,21 @@ function diagnose(lazy: Run, complete: Run): { headline: string; tone: "bad" | "
     const s = strayed[0];
     const extra =
       lazy.steps.length > complete.steps.length
-        ? ` It took ${lazy.steps.length} calls to the careful agent's ${complete.steps.length}.`
+        ? ` It took ${lazy.steps.length} calls against the careful agent's ${complete.steps.length}.`
         : "";
     return {
       tone: "mixed",
       headline:
-        `This run, the lazy agent called ${s.tool} with ${JSON.stringify(
+        `On this run the lazy agent called ${s.tool} with ${JSON.stringify(
           Object.values(s.input)[0],
-        )} — something the careful agent never asked for.${extra}`,
+        )}. The careful agent never asked for that.${extra}`,
     };
   }
 
   return {
     tone: "level",
     headline:
-      "This run, both agents made exactly the same calls. That happens — the failure is unreliable, not constant, which is worse than broken because it survives the one test you ran before shipping.",
+      "On this run both agents made exactly the same calls. That happens. The failure is unreliable rather than constant, which is worse than broken, because it survives the one test you ran before shipping.",
   };
 }
 
@@ -349,7 +349,7 @@ function Panel({
         </h3>
       </div>
 
-      {/* 1 — what the model was told */}
+      {/* 1. what the model was told */}
       <Step
         n="1"
         title={
@@ -369,12 +369,12 @@ function Panel({
           {description}
         </p>
         <p className="mt-2 text-[13px] text-muted">
-          This sentence is the entire interface. The model never sees the code
-          behind it.
+          The model reads this alongside the tool name and parameter schema. It
+          never sees the code behind them.
         </p>
       </Step>
 
-      {/* 2 — the call it built */}
+      {/* 2. the call it built */}
       <Step n="2" title="The tool call it constructed">
         {loading && <Skeleton />}
         {!loading && !run && <Waiting />}
@@ -415,14 +415,14 @@ function Panel({
               )}
             </ol>
             <p className="mt-2 text-[13px] text-muted">
-              The model didn&apos;t run anything. It produced this JSON; your
-              program chose to execute it.
+              The model did not run anything. It produced this JSON. Your
+              program then chose to execute it.
             </p>
           </>
         )}
       </Step>
 
-      {/* 3 — the answer */}
+      {/* 3. the answer */}
       <Step n="3" title="The answer it gave" last>
         {loading && <Skeleton />}
         {!loading && !run && <Waiting />}
