@@ -18,10 +18,25 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+const DESCRIPTION =
+  "The model never sees your code. It sees the declaration you wrote about it. A live comparison of how tool descriptions change what an AI agent actually does.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL("https://good-tools-bad-tools.vercel.app"),
   title: "Good Tools, Bad Tools | Elegance AI",
-  description:
-    "The model never sees your code. It sees the declaration you wrote about it. A live comparison of how tool descriptions change what an AI agent actually does.",
+  description: DESCRIPTION,
+  openGraph: {
+    title: "Good Tools, Bad Tools",
+    description: DESCRIPTION,
+    siteName: "Elegance AI",
+    type: "article",
+    url: "/lab/good-tools-bad-tools",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Good Tools, Bad Tools",
+    description: DESCRIPTION,
+  },
 };
 
 export default function RootLayout({

@@ -3,10 +3,18 @@ import Link from "next/link";
 import { Header, Footer } from "@/components/Chrome";
 import LiveDemo from "@/components/LiveDemo";
 
+const DESCRIPTION =
+  "Two agents. The same question, the same functions, the same model. Only the wording of the tool declarations differs, and it changes what they do.";
+
 export const metadata: Metadata = {
   title: "Good Tools, Bad Tools | Elegance AI",
-  description:
-    "Two agents. The same question, the same functions, the same model. Only the wording of the tool declarations differs, and it changes what they do.",
+  description: DESCRIPTION,
+  openGraph: {
+    title: "Good Tools, Bad Tools",
+    description: DESCRIPTION,
+    url: "/lab/good-tools-bad-tools",
+  },
+  twitter: { card: "summary_large_image", description: DESCRIPTION },
 };
 
 export default function LabPage() {
